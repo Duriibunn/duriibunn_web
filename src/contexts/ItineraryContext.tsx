@@ -149,10 +149,32 @@ export function ItineraryProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_ITINERARY', payload: itinerary });
   }, []);
 
-  const saveItinerary = useCallback((itinerary: DailyItinerary) => {
+  const saveItinerary = useCallback(async (itinerary: DailyItinerary) => {
     dispatch({ type: 'SAVE_ITINERARY', payload: itinerary });
-    // In production: save to Firestore here
-    localStorage.setItem(`itinerary-${itinerary.id}`, JSON.stringify(itinerary));
+    // Save to Firestore
+    try {
+      const { createItinerary, updateItinerary } = await import('../firebase/itineraries');
+      const { showToast } = await import('../components/Toast');
+      
+      if (!itinerary.id || itinerary.id.startsWith('it-')) {
+        // New itinerary - create in Firestore
+        const firestoreId = await createItinerary(itinerary);
+        dispatch({ type: 'SET_ITINERARY', payload: { ...itinerary, id: firestoreId } });
+        showToast('일정이 저장되었습니다', 'success');
+      } else {
+        // Update existing
+        await updateItinerary(itinerary.id, itinerary);
+        showToast('일정이 업데이트되었습니다', 'success');
+      }
+      // Fallback to localStorage
+      localStorage.setItem(`itinerary-${itinerary.id}`, JSON.stringify(itinerary));
+    } catch (error) {
+      console.error('Failed to save to Firestore:', error);
+      const { showToast } = await import('../components/Toast');
+      showToast('저장 중 오류가 발생했습니다', 'error');
+      // Fallback to localStorage only
+      localStorage.setItem(`itinerary-${itinerary.id}`, JSON.stringify(itinerary));
+    }
   }, []);
 
   const recomputeRoute = useCallback(async () => {

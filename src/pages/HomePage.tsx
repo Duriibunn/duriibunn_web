@@ -1,166 +1,125 @@
-import { Link } from 'react-router-dom';
-import { Map, Compass, Calendar, Users } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Map } from 'lucide-react';
+import { getRecommendedPlaces } from '../data/mockPlaces';
+import { getRecommendedHotels } from '../data/mockHotels';
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const recommendedAttractions = getRecommendedPlaces(4);
+  const recommendedHotels = getRecommendedHotels(3);
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
-      {/* Hero Section */}
+      {/* Hero Section - date prompt + CTA */}
       <div className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              여행의 모든 순간을
-              <br />
-              <span className="text-primary-500">완벽하게</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+              언제 떠나시나요?
             </h1>
-            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-              경로 계획부터 일정 관리까지,
-              <br className="sm:hidden" />
-              스마트하게 여행을 준비하세요
+            <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
+              여행 일정을 입력하면 맞춤 추천과 자동 경로 계획을 도와드립니다.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/planner"
-                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium text-lg"
+
+            <div className="mt-8">
+              <button
+                onClick={() => navigate('/create-trip')}
+                className="px-12 py-5 bg-teal-500 text-white text-xl font-bold rounded-2xl hover:bg-teal-600 shadow-2xl"
               >
-                경로 만들기
-              </Link>
-              <Link
-                to="/explore"
-                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 bg-white text-gray-900 rounded-xl hover:bg-gray-50 transition-colors font-medium text-lg border border-gray-200"
-              >
-                장소 탐색
-              </Link>
+                여행 일정 만들기
+              </button>
             </div>
+
+            <p className="text-sm text-gray-500 mt-8">추천 숙소와 관광지를 확인해보세요</p>
           </div>
         </div>
 
-        {/* Hero Image Placeholder */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-          <div className="aspect-[16/9] bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl overflow-hidden shadow-lg">
+        {/* Hero Image / Illustration */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="aspect-[16/9] bg-linear-to-br from-primary-100 to-primary-50 rounded-2xl overflow-hidden shadow-lg">
             <div className="w-full h-full flex items-center justify-center">
-              <Map className="h-24 w-24 text-primary-300" />
+              <Map className="h-20 w-20 text-primary-300" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <Link
-            to="/planner"
-            className="group p-8 bg-white rounded-2xl hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4">
-              <Compass className="h-6 w-6 text-white" />
+      {/* Recommendations */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Hotels */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">추천 숙소</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recommendedHotels.map((h) => (
+                <div key={h.id} className="bg-white rounded-xl overflow-hidden shadow-sm">
+                  <div className="h-36 bg-gray-100">
+                    <img src={h.photos?.[0]} alt={h.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{h.name}</h3>
+                        <p className="text-sm text-gray-600">{h.address}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-gray-900">{h.rating}</div>
+                        <div className="text-xs text-gray-500">후기</div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-3">{h.description}</p>
+                    <div className="mt-4 flex gap-2">
+                      <Link to="/explore" className="text-sm text-primary-600">자세히 보기</Link>
+                      <button
+                        onClick={() => navigate('/create-trip')}
+                        className="ml-auto text-sm px-3 py-2 bg-primary-50 text-primary-700 rounded-md"
+                      >
+                        숙소로 선택
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">경로 분석</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              최적의 이동 경로를 자동으로 계산합니다
-            </p>
-          </Link>
+          </section>
 
-          <Link
-            to="/explore"
-            className="group p-8 bg-white rounded-2xl hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4">
-              <Map className="h-6 w-6 text-white" />
+          {/* Attractions */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">추천 관광지</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recommendedAttractions.map((p) => (
+                <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm p-4">
+                  <div className="flex items-start gap-3">
+                    <img src={p.photos?.[0]} alt={p.name} className="w-20 h-20 rounded-lg object-cover" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{p.name}</h3>
+                      <p className="text-sm text-gray-600">{p.category}</p>
+                      <p className="text-sm text-gray-500 mt-2">{p.description}</p>
+                      <div className="mt-3">
+                        <button
+                          onClick={() => navigate('/create-trip')}
+                          className="text-sm px-3 py-2 bg-primary-50 text-primary-700 rounded-md"
+                        >
+                          일정에 추가
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">장소 탐색</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              다양한 장소를 탐색하고 일정에 추가하세요
-            </p>
-          </Link>
-
-          <Link
-            to="/myplan"
-            className="group p-8 bg-white rounded-2xl hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">내 일정</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              저장된 여행 일정을 관리하세요
-            </p>
-          </Link>
-
-          <Link
-            to="/community"
-            className="group p-8 bg-white rounded-2xl hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">커뮤니티</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              다른 사용자들의 여행을 둘러보세요
-            </p>
-          </Link>
+          </section>
         </div>
       </div>
 
-      {/* How It Works Section */}
-      <div className="bg-white py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">간단한 3단계</h2>
-            <p className="text-lg text-gray-600">손쉽게 여행 계획을 완성하세요</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                1
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">장소 선택</h3>
-              <p className="text-gray-600 leading-relaxed">
-                방문하고 싶은 장소를 검색하고 선택하세요
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                2
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">일정 구성</h3>
-              <p className="text-gray-600 leading-relaxed">
-                순서를 조정하고 경로를 최적화하세요
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                3
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">경로 확인</h3>
-              <p className="text-gray-600 leading-relaxed">
-                지도에서 전체 경로를 확인하고 출발하세요
-              </p>
-            </div>
-          </div>
+      {/* How It Works (keep smaller) */}
+      <div className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">간단한 3단계</h2>
+          <p className="text-gray-600">장소 선택 → 일정 구성 → 경로 확인</p>
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="bg-primary-500 text-white py-20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold mb-4">
-            지금 바로 시작하세요
-          </h2>
-          <p className="text-xl text-primary-100 mb-10">
-            더 스마트한 여행 계획을 경험해보세요
-          </p>
-          <Link
-            to="/planner"
-            className="inline-flex items-center justify-center px-10 py-4 bg-white text-primary-600 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-lg"
-          >
-            무료로 시작하기
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

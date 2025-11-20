@@ -1,13 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Map, Compass, Calendar, Users, Menu } from 'lucide-react';
 import { useState } from 'react';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function TopBar() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { path: '/planner', label: '경로 분석', icon: Compass },
+    { path: '/create-trip', label: '일정 생성', icon: Compass },
     { path: '/explore', label: '장소 탐색', icon: Map },
     { path: '/myplan', label: '내 일정', icon: Calendar },
     { path: '/community', label: '커뮤니티', icon: Users },
@@ -50,13 +51,18 @@ export default function TopBar() {
             })}
           </nav>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-900"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+          {/* Language Switcher */}
+          <div className="flex items-center space-x-2">
+            <LanguageSwitcher />
+            
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-900"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kakao Maps API 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .info {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>🗺️ Kakao Maps API 테스트</h1>
+        <p>API 키: <code id="apiKey">4ab2906f3fa37e17fa8ddf7e99b54255</code></p>
+        <p>상태: <span id="status">로딩 중...</span></p>
+    </div>
+    
+    <div id="map"></div>
+
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=4ab2906f3fa37e17fa8ddf7e99b54255"></script>
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        try {
+            if (typeof kakao === 'undefined') {
+                statusEl.innerHTML = '<span class="error">❌ Kakao SDK 로드 실패</span>';
+                throw new Error('Kakao SDK를 불러올 수 없습니다.');
+            }
+
+            statusEl.innerHTML = '<span class="success">✅ SDK 로드 성공! 지도 생성 중...</span>';
+
+            const container = document.getElementById('map');
+            const options = {
+                center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+                level: 3
+            };
+
+            const map = new kakao.maps.Map(container, options);
+            
+            // 마커 추가
+            const markerPosition = new kakao.maps.LatLng(37.5665, 126.9780);
+            const marker = new kakao.maps.Marker({
+                position: markerPosition
+            });
+            marker.setMap(map);
+
+            statusEl.innerHTML = '<span class="success">✅ 지도 생성 완료!</span>';
+            
+        } catch (error) {
+            console.error('Kakao Maps 에러:', error);
+            statusEl.innerHTML = `<span class="error">❌ 에러: ${error.message}</span>`;
+            document.getElementById('map').innerHTML = 
+                `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#ef4444;">
+                    <div style="text-align:center;">
+                        <h3>지도를 불러올 수 없습니다</h3>
+                        <p>${error.message}</p>
+                    </div>
+                </div>`;
+        }
+    </script>
+</body>
+</html>

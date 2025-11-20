@@ -30,16 +30,27 @@ export default function MapPanel({ segments, isLoading, className = '', items = 
     let cancelled = false;
     if (!containerRef.current) return;
 
+    console.log('🗺️ Kakao Maps 초기화 시작...', { kakaoKey: kakaoKey ? '설정됨' : '미설정' });
+
     loadKakaoSdk(kakaoKey)
       .then((kakao) => {
-        if (cancelled || !containerRef.current) return;
+        if (cancelled || !containerRef.current) {
+          console.log('🗺️ 컴포넌트가 언마운트되어 지도 생성 취소');
+          return;
+        }
+        console.log('✅ Kakao SDK 로드 성공');
         const center = items[0]
           ? new kakao.maps.LatLng(items[0].place.lat, items[0].place.lng)
           : new kakao.maps.LatLng(defaultCenter.lat, defaultCenter.lng);
         const map = new kakao.maps.Map(containerRef.current, { center, level: levelRef.current });
         mapRef.current = map;
+        setSdkError(null);
+        console.log('✅ 지도 생성 완료');
       })
-      .catch((err: Error) => setSdkError(err.message));
+      .catch((err: Error) => {
+        console.error('❌ Kakao SDK 로드 실패:', err);
+        setSdkError(err.message);
+      });
 
     return () => {
       cancelled = true;
@@ -147,15 +158,25 @@ export default function MapPanel({ segments, isLoading, className = '', items = 
 
       {/* Error or missing key overlay */}
       {(sdkError || noKey) && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center p-6 bg-white rounded-xl shadow border border-gray-100 max-w-md">
-            <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-gray-900 mb-1">지도를 불러올 수 없어요</h3>
-            <p className="text-sm text-gray-600">
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-red-100 max-w-md">
+            <MapPin className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">지도를 불러올 수 없어요</h3>
+            <p className="text-sm text-gray-600 mb-4">
               {noKey
-                ? '환경변수 VITE_KAKAO_JS_KEY가 설정되지 않았습니다. .env.local에 추가하세요.'
-                : `SDK 로드 오류: ${sdkError}`}
+                ? '환경변수 VITE_KAKAO_JS_KEY가 설정되지 않았습니다.'
+                : sdkError}
             </p>
+            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg text-left">
+              <p className="font-semibold mb-1">해결 방법:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Kakao Developers에서 JavaScript 키 확인</li>
+                <li>.env 파일에 <code className="bg-gray-200 px-1 rounded">VITE_KAKAO_JS_KEY=your_key</code> 추가</li>
+                <li>개발 서버 재시작 (npm run dev)</li>
+                <li>브라우저 새로고침</li>
+              </ol>
+              <p className="mt-2">현재 키: {kakaoKey ? `${kakaoKey.substring(0, 10)}...` : '❌ 없음'}</p>
+            </div>
           </div>
         </div>
       )}

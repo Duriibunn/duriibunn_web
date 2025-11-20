@@ -1,13 +1,16 @@
 import type { Place } from '../types';
-import { X, MapPin, Clock, Star, Phone, Navigation } from 'lucide-react';
+import { X, MapPin, Clock, Star, Phone, Navigation, Globe, Loader2 } from 'lucide-react';
+import type { TourPlaceDetail } from '../utils/publicDataApi';
 
 interface PlacePopupProps {
   place: Place;
   onClose: () => void;
   onNavigate?: (place: Place) => void;
+  placeDetail?: TourPlaceDetail | null;
+  isLoadingDetail?: boolean;
 }
 
-export default function PlacePopup({ place, onClose, onNavigate }: PlacePopupProps) {
+export default function PlacePopup({ place, onClose, onNavigate, placeDetail, isLoadingDetail }: PlacePopupProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
       {/* Backdrop */}
@@ -51,29 +54,66 @@ export default function PlacePopup({ place, onClose, onNavigate }: PlacePopupPro
             )}
           </div>
 
-          {/* Description */}
-          {place.description && (
-            <p className="text-gray-600 mb-4 leading-relaxed">{place.description}</p>
+          {/* Loading Detail */}
+          {isLoadingDetail && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
+              <span className="ml-2 text-gray-600">상세 정보 불러오는 중...</span>
+            </div>
+          )}
+
+          {/* Description/Overview */}
+          {!isLoadingDetail && (placeDetail?.overview || place.description) && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <p 
+                className="text-gray-700 leading-relaxed text-sm"
+                dangerouslySetInnerHTML={{ 
+                  __html: placeDetail?.overview || place.description || '' 
+                }}
+              />
+            </div>
           )}
 
           {/* Info Grid */}
           <div className="space-y-3 mb-6">
-            {place.address && (
+            {(placeDetail?.addr1 || place.address) && (
               <div className="flex items-start space-x-3">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{place.address}</span>
+                <MapPin className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <span className="text-gray-700">{placeDetail?.addr1 || place.address}</span>
+                  {placeDetail?.addr2 && (
+                    <span className="text-gray-500 text-sm block">{placeDetail.addr2}</span>
+                  )}
+                  {placeDetail?.zipcode && (
+                    <span className="text-gray-400 text-xs block mt-1">우편번호: {placeDetail.zipcode}</span>
+                  )}
+                </div>
               </div>
             )}
             {place.openingHours && (
               <div className="flex items-start space-x-3">
-                <Clock className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <Clock className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
                 <span className="text-gray-700">{place.openingHours}</span>
               </div>
             )}
-            {place.phone && (
+            {(placeDetail?.tel || place.phone) && (
               <div className="flex items-start space-x-3">
-                <Phone className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{place.phone}</span>
+                <Phone className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
+                <a 
+                  href={`tel:${placeDetail?.tel || place.phone}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  {placeDetail?.tel || place.phone}
+                </a>
+              </div>
+            )}
+            {placeDetail?.homepage && (
+              <div className="flex items-start space-x-3">
+                <Globe className="h-5 w-5 text-gray-400 mt-0.5 shrink-0" />
+                <div 
+                  className="text-blue-600 hover:underline text-sm overflow-hidden"
+                  dangerouslySetInnerHTML={{ __html: placeDetail.homepage }}
+                />
               </div>
             )}
           </div>
