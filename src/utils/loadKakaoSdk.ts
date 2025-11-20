@@ -36,16 +36,30 @@ export function loadKakaoSdk(appKey: string | undefined): Promise<Kakao> {
 
     const script = document.createElement('script');
     script.setAttribute('data-kakao-sdk', 'true');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`;
+    // Use https instead of //
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${appKey}&autoload=false`;
     script.async = true;
     script.onload = () => {
       try {
-        window.kakao.maps.load(() => resolve(window.kakao));
+        if (!window.kakao || !window.kakao.maps) {
+          reject(new Error('Kakao SDK가 로드되었지만 maps 객체를 찾을 수 없습니다.'));
+          return;
+        }
+        window.kakao.maps.load(() => {
+          if (window.kakao && window.kakao.maps) {
+            resolve(window.kakao);
+          } else {
+            reject(new Error('Kakao maps.load 완료 후에도 객체를 찾을 수 없습니다.'));
+          }
+        });
       } catch (e) {
         reject(e instanceof Error ? e : new Error('Kakao maps.load 실행 중 오류')); 
       }
     };
-    script.onerror = () => reject(new Error('Kakao SDK 스크립트 로드 오류'));
+    script.onerror = (event) => {
+      console.error('Kakao SDK 로드 실패:', event);
+      reject(new Error('Kakao SDK 스크립트 로드 오류 - 네트워크 연결 또는 API 키를 확인하세요'));
+    };
     document.head.appendChild(script);
   });
 

@@ -8,6 +8,11 @@ import PlannerPage from './pages/PlannerPage';
 import ExplorePage from './pages/ExplorePage';
 import MyPlanPage from './pages/MyPlanPage';
 import CommunityPage from './pages/CommunityPage';
+import TripDetailPage from './pages/TripDetailPage';
+import CreateTripPage from './pages/CreateTripPage';
+import SelectPlacesPage from './pages/SelectPlacesPage';
+import DailySchedulePage from './pages/DailySchedulePage';
+import Toast, { useToast } from './components/Toast';
 import type { DailyItinerary } from './types';
 
 function App() {
@@ -22,6 +27,7 @@ function App() {
 
 function AppContent() {
   const { setItinerary } = useItinerary();
+  const { toasts, removeToast } = useToast();
 
   // Initialize with a default itinerary on first load
   useEffect(() => {
@@ -37,18 +43,27 @@ function AppContent() {
   }, [setItinerary]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <TopBar />
-      <main className="flex-1 flex flex-col">
+      <main className="flex flex-col flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/planner" element={<PlannerPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/myplan" element={<MyPlanPage />} />
+          <Route path="/trip/:id" element={<TripDetailPage />} />
+          <Route path="/create-trip" element={<CreateTripPage />} />
+          <Route path="/create-trip/select-places" element={<SelectPlacesPage />} />
+          <Route path="/create-trip/schedule" element={<DailySchedulePage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {/* Toast notifications */}
+      {toasts.map((toast) => (
+        <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => removeToast(toast.id)} />
+      ))}
     </div>
   );
 }

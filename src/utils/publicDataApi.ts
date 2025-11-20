@@ -1,0 +1,552 @@
+/**
+ * Public Data Portal (data.go.kr) API Integration
+ * Korean Tourism Organization Tour API (한국관광공사 Tour API)
+ * 
+ * API Reference: https://www.data.go.kr/data/15101578/openapi.do
+ * Endpoint: https://apis.data.go.kr/B551011/KorService2
+ * 
+ * Required: VITE_PUBLIC_DATA_API_KEY environment variable
+ * 
+ * Note: Using Vite proxy to avoid CORS issues
+ */
+
+const BASE_URL = '/api/tour'; // Proxy to https://apis.data.go.kr/B551011/KorService2
+const API_KEY = import.meta.env.VITE_PUBLIC_DATA_API_KEY || '';
+
+// 도시명 -> 지역코드 매핑
+const CITY_TO_AREA_CODE: Record<string, number> = {
+  '서울': 1,
+  '인천': 2,
+  '대전': 3,
+  '대구': 4,
+  '광주': 5,
+  '부산': 6,
+  '울산': 7,
+  '세종': 8,
+  '경기': 31,
+  '가평': 31,
+  '양평': 31,
+  '강원': 32,
+  '강릉': 32,
+  '속초': 32,
+  '춘천': 32,
+  '홍천': 32,
+  '충북': 33,
+  '충남': 34,
+  '태안': 34,
+  '경북': 35,
+  '경주': 35,
+  '포항': 35,
+  '안동': 35,
+  '경남': 36,
+  '통영': 36,
+  '거제': 36,
+  '남해': 36,
+  '전북': 37,
+  '전주': 37,
+  '전남': 38,
+  '여수': 38,
+  '제주': 39,
+};
+
+export interface TourPlace {
+  contentid: string;
+  contenttypeid: string;
+  title: string;
+  addr1: string;
+  addr2?: string;
+  tel?: string;
+  firstimage?: string;
+  firstimage2?: string;
+  mapx: string;
+  mapy: string;
+  mlevel?: string;
+  areacode?: string;
+  sigungucode?: string;
+  cat1?: string;
+  cat2?: string;
+  cat3?: string;
+}
+
+interface ApiResponse {
+  response: {
+    header: {
+      resultCode: string;
+      resultMsg: string;
+    };
+    body: {
+      items: {
+        item: TourPlace[];
+      };
+      numOfRows: number;
+      pageNo: number;
+      totalCount: number;
+    };
+  };
+}
+
+/**
+ * 지역 기반 관광정보 조회
+ * @param areaCode - 지역 코드 (서울: 1, 인천: 2, 대전: 3, 대구: 4, 광주: 5, 부산: 6, 울산: 7, 세종: 8, 경기: 31, 강원: 32, 충북: 33, 충남: 34, 경북: 35, 경남: 36, 전북: 37, 전남: 38, 제주: 39)
+ * @param sigunguCode - 시군구 코드 (optional)
+ * @param contentTypeId - 컨텐츠 타입 ID (12: 관광지, 14: 문화시설, 15: 축제공연행사, 25: 여행코스, 28: 레포츠, 32: 숙박, 38: 쇼핑, 39: 음식점)
+ * @param numOfRows - 한 페이지 결과 수
+ * @param pageNo - 페이지 번호
+ */
+export async function getAreaBasedList(
+  areaCode?: number,
+  sigunguCode?: number,
+  contentTypeId?: number,
+  numOfRows: number = 10,
+  pageNo: number = 1
+): Promise<TourPlace[]> {
+  if (!API_KEY) {
+    console.error('VITE_PUBLIC_DATA_API_KEY is not set');
+    return [];
+  }
+
+  const params = new URLSearchParams({
+    serviceKey: API_KEY,
+    numOfRows: String(numOfRows),
+    pageNo: String(pageNo),
+    MobileOS: 'ETC',
+    MobileApp: 'Dooribun',
+    _type: 'json',
+    arrange: 'B', // A: 제목순, B: 조회순(인기도순), C: 수정일순, D: 생성일순
+  });
+
+  if (areaCode) params.append('areaCode', String(areaCode));
+  if (sigunguCode) params.append('sigunguCode', String(sigunguCode));
+  if (contentTypeId) params.append('contentTypeId', String(contentTypeId));
+
+  // KorService2에서는 숫자 2를 붙인 areaBasedList2 사용
+  const url = `${BASE_URL}/areaBasedList2?${params.toString()}`;
+  console.log('🌐 Area API Request:', url);
+
+  try {
+    const response = await fetch(url);
+    console.log('📡 Area Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // API 응답 구조 확인
+    if (!data || !data.response) {
+      console.error('❌ Invalid response structure:', data);
+      return [];
+    }
+
+    const apiData = data as ApiResponse;
+    
+    if (apiData.response.header.resultCode !== '0000') {
+      console.error('❌ API Error:', apiData.response.header.resultMsg);
+      return [];
+    }
+
+    if (!apiData.response.body || !apiData.response.body.items) {
+      console.warn('⚠️ No items in response body');
+      return [];
+    }
+
+    const items = apiData.response.body.items?.item || [];
+    console.log(`✅ Area API success: ${items.length} items (total: ${apiData.response.body.totalCount})`);
+    return items;
+  } catch (error) {
+    console.error('❌ Failed to fetch area-based list:', error);
+    return [];
+  }
+}
+
+/**
+ * 키워드 검색
+ * @param keyword - 검색 키워드
+ * @param contentTypeId - 컨텐츠 타입 ID (optional)
+ * @param areaCode - 지역 코드 (optional)
+ * @param numOfRows - 한 페이지 결과 수
+ * @param pageNo - 페이지 번호
+ */
+// Keyword search
+export async function searchKeyword(
+  keyword: string,
+  contentTypeId?: number,
+  areaCode?: number,
+  numOfRows: number = 10,
+  pageNo: number = 1
+): Promise<TourPlace[]> {
+  const endpoint = 'searchKeyword2';
+  const params: Record<string, string> = {
+    numOfRows: String(numOfRows),
+    pageNo: String(pageNo),
+    MobileOS: 'ETC',
+    MobileApp: 'Dooribun',
+    _type: 'json',
+    arrange: 'B', // B: 조회순 (인기도순) - 가장 유명한 곳부터 표시
+    keyword,
+  };
+
+  if (contentTypeId) params.contentTypeId = String(contentTypeId);
+  if (areaCode) params.areaCode = String(areaCode);
+
+  const url = `${BASE_URL}/${endpoint}?${new URLSearchParams(params).toString()}&serviceKey=${API_KEY}`;
+  console.log('🔍 Search API Request:', url);
+
+  try {
+    const response = await fetch(url);
+    console.log('📡 Search Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+
+    if (!data || !data.response) {
+      console.error('❌ Invalid response structure:', data);
+      return [];
+    }
+
+    const apiData = data as ApiResponse;
+    
+    if (apiData.response.header.resultCode !== '0000') {
+      console.error('❌ API Error:', apiData.response.header.resultMsg);
+      return [];
+    }
+
+    if (!apiData.response.body || !apiData.response.body.items) {
+      console.warn('⚠️ No items in response body');
+      return [];
+    }
+
+    const items = apiData.response.body.items?.item || [];
+    console.log(`✅ Search API success: ${items.length} items for "${keyword}" (total: ${apiData.response.body.totalCount})`);
+    return items;
+  } catch (error) {
+    console.error('❌ Failed to search keyword:', error);
+    return [];
+  }
+}
+
+/**
+ * 위치 기반 관광정보 조회 (현재 위치 주변)
+ * @param mapX - GPS X좌표 (경도)
+ * @param mapY - GPS Y좌표 (위도)
+ * @param radius - 거리 반경(m) (1000-20000)
+ * @param contentTypeId - 컨텐츠 타입 ID (optional)
+ * @param numOfRows - 한 페이지 결과 수
+ * @param pageNo - 페이지 번호
+ */
+// Location-based list (by GPS coordinates)
+export async function locationBasedList(
+  mapX: number,
+  mapY: number,
+  radius: number = 1000,
+  contentTypeId?: number,
+  numOfRows: number = 10,
+  pageNo: number = 1
+): Promise<TourPlace[]> {
+  const endpoint = 'locationBasedList2';
+  const params: Record<string, string> = {
+    numOfRows: String(numOfRows),
+    pageNo: String(pageNo),
+    MobileOS: 'ETC',
+    MobileApp: 'Dooribun',
+    _type: 'json',
+    arrange: 'A',
+    mapX: String(mapX),
+    mapY: String(mapY),
+    radius: String(radius),
+  };
+
+  if (contentTypeId) params.contentTypeId = String(contentTypeId);
+
+  const url = `${BASE_URL}/${endpoint}?${new URLSearchParams(params).toString()}&serviceKey=${API_KEY}`;
+  console.log('📍 Location API Request:', url);
+
+  try {
+    const response = await fetch(url);
+    console.log('📡 Location Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+
+    if (!data || !data.response) {
+      console.error('❌ Invalid response structure:', data);
+      return [];
+    }
+
+    const apiData = data as ApiResponse;
+    
+    if (apiData.response.header.resultCode !== '0000') {
+      console.error('❌ API Error:', apiData.response.header.resultMsg);
+      return [];
+    }
+
+    if (!apiData.response.body || !apiData.response.body.items) {
+      console.warn('⚠️ No items in response body');
+      return [];
+    }
+
+    const items = apiData.response.body.items?.item || [];
+    console.log(`✅ Location API success: ${items.length} items near (${mapX}, ${mapY}) (total: ${apiData.response.body.totalCount})`);
+    return items;
+  } catch (error) {
+    console.error('❌ Failed to fetch location-based list:', error);
+    return [];
+  }
+}
+
+/**
+ * Content Type IDs
+ */
+export const CONTENT_TYPES = {
+  TOURIST_SPOT: 12, // 관광지
+  CULTURE: 14, // 문화시설
+  FESTIVAL: 15, // 축제공연행사
+  TOUR_COURSE: 25, // 여행코스
+  LEISURE_SPORTS: 28, // 레포츠
+  ACCOMMODATION: 32, // 숙박
+  SHOPPING: 38, // 쇼핑
+  RESTAURANT: 39, // 음식점
+} as const;
+
+/**
+ * Area Codes (Seoul and major cities)
+ */
+export const AREA_CODES = {
+  SEOUL: 1,
+  INCHEON: 2,
+  DAEJEON: 3,
+  DAEGU: 4,
+  GWANGJU: 5,
+  BUSAN: 6,
+  ULSAN: 7,
+  SEJONG: 8,
+  GYEONGGI: 31,
+  GANGWON: 32,
+  CHUNGBUK: 33,
+  CHUNGNAM: 34,
+  GYEONGBUK: 35,
+  GYEONGNAM: 36,
+  JEONBUK: 37,
+  JEONNAM: 38,
+  JEJU: 39,
+} as const;
+
+/**
+ * Cache for API responses (simple in-memory cache)
+ */
+const cache = new Map<string, { data: TourPlace[]; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
+
+export function getCachedData(key: string): TourPlace[] | null {
+  const cached = cache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() - cached.timestamp > CACHE_DURATION) {
+    cache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+}
+
+export function setCachedData(key: string, data: TourPlace[]): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
+/**
+ * Get Seoul tourist spots with caching
+ */
+export async function getSeoulTouristSpots(numOfRows: number = 10): Promise<TourPlace[]> {
+  const cacheKey = `seoul-tourist-${numOfRows}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const data = await getAreaBasedList(
+    AREA_CODES.SEOUL,
+    undefined,
+    CONTENT_TYPES.TOURIST_SPOT,
+    numOfRows
+  );
+  
+  setCachedData(cacheKey, data);
+  return data;
+}
+
+/**
+ * Get Seoul cultural facilities with caching
+ */
+export async function getSeoulCulturalFacilities(numOfRows: number = 10): Promise<TourPlace[]> {
+  const cacheKey = `seoul-culture-${numOfRows}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const data = await getAreaBasedList(
+    AREA_CODES.SEOUL,
+    undefined,
+    CONTENT_TYPES.CULTURE,
+    numOfRows
+  );
+  
+  setCachedData(cacheKey, data);
+  return data;
+}
+
+/**
+ * Get Seoul accommodations with caching
+ */
+export async function getSeoulAccommodations(numOfRows: number = 10): Promise<TourPlace[]> {
+  const cacheKey = `seoul-accommodation-${numOfRows}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const data = await getAreaBasedList(
+    AREA_CODES.SEOUL,
+    undefined,
+    CONTENT_TYPES.ACCOMMODATION,
+    numOfRows
+  );
+  
+  setCachedData(cacheKey, data);
+  return data;
+}
+
+/**
+ * Get Seoul restaurants with caching
+ */
+export async function getSeoulRestaurants(numOfRows: number = 10): Promise<TourPlace[]> {
+  const cacheKey = `seoul-restaurant-${numOfRows}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) return cached;
+
+  const data = await getAreaBasedList(
+    AREA_CODES.SEOUL,
+    undefined,
+    CONTENT_TYPES.RESTAURANT,
+    numOfRows
+  );
+  
+  setCachedData(cacheKey, data);
+  return data;
+}
+
+/**
+ * Get places by city name and content type
+ * @param cityName - 도시 이름 (한글)
+ * @param contentTypeId - 컨텐츠 타입 ID
+ * @param numOfRows - 결과 수
+ */
+export async function getPlacesByCity(
+  cityName: string,
+  contentTypeId: number,
+  numOfRows: number = 20
+): Promise<TourPlace[]> {
+  const areaCode = CITY_TO_AREA_CODE[cityName];
+  
+  if (!areaCode) {
+    console.warn(`Unknown city: ${cityName}, using keyword search`);
+    return searchKeyword(cityName, contentTypeId, undefined, numOfRows);
+  }
+
+  console.log(`🗺️ Fetching ${cityName} data using area code ${areaCode}`);
+  
+  const cacheKey = `city-${areaCode}-type-${contentTypeId}-${numOfRows}`;
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    console.log('📦 Using cached data');
+    return cached;
+  }
+
+  const data = await getAreaBasedList(areaCode, undefined, contentTypeId, numOfRows);
+  setCachedData(cacheKey, data);
+  return data;
+}
+
+/**
+ * 공통정보 조회 (상세 정보)
+ * @param contentId - 컨텐츠 ID
+ * @param contentTypeId - 컨텐츠 타입 ID
+ */
+export interface TourPlaceDetail extends TourPlace {
+  homepage?: string;
+  overview?: string;
+  telname?: string;
+  zipcode?: string;
+  booktour?: string;
+}
+
+export async function getDetailCommon(
+  contentId: string,
+  contentTypeId?: number
+): Promise<TourPlaceDetail | null> {
+  if (!API_KEY) {
+    console.error('VITE_PUBLIC_DATA_API_KEY is not set');
+    return null;
+  }
+
+  const endpoint = 'detailCommon2';
+  const params: Record<string, string> = {
+    MobileOS: 'ETC',
+    MobileApp: 'Dooribun',
+    _type: 'json',
+    contentId,
+    defaultYN: 'Y',
+    firstImageYN: 'Y',
+    areacodeYN: 'Y',
+    catcodeYN: 'Y',
+    addrinfoYN: 'Y',
+    mapinfoYN: 'Y',
+    overviewYN: 'Y',
+  };
+
+  if (contentTypeId) params.contentTypeId = String(contentTypeId);
+
+  const url = `${BASE_URL}/${endpoint}?${new URLSearchParams(params).toString()}&serviceKey=${API_KEY}`;
+  console.log('📝 Detail API Request:', url);
+
+  try {
+    const response = await fetch(url);
+    console.log('📡 Detail Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+
+    if (!data || !data.response) {
+      console.error('❌ Invalid response structure:', data);
+      return null;
+    }
+
+    const apiData = data as ApiResponse;
+    
+    if (apiData.response.header.resultCode !== '0000') {
+      console.error('❌ API Error:', apiData.response.header.resultMsg);
+      return null;
+    }
+
+    if (!apiData.response.body || !apiData.response.body.items) {
+      console.warn('⚠️ No items in response body');
+      return null;
+    }
+
+    const items = apiData.response.body.items?.item || [];
+    if (items.length === 0) {
+      console.warn('⚠️ No detail found for contentId:', contentId);
+      return null;
+    }
+
+    console.log(`✅ Detail API success for ${contentId}`);
+    return items[0] as TourPlaceDetail;
+  } catch (error) {
+    console.error('❌ Failed to fetch detail:', error);
+    return null;
+  }
+}
