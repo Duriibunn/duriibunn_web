@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useItinerary } from '../contexts/ItineraryContext';
 import type { Place } from '../types';
@@ -82,11 +82,11 @@ export default function ExplorePage() {
         setApiPlaces(places);
 
         if (tourPlaces.length === 0 && selectedCategory !== 'all') {
-          setApiError('해당 카테고리의 데이터를 불러올 수 없습니다.');
+          setApiError(t('categoryLoadError'));
         }
       } catch (error) {
         console.error('Failed to load API places:', error);
-        setApiError('데이터를 불러오는 중 오류가 발생했습니다.');
+        setApiError(t('dataLoadError'));
       } finally {
         setIsLoadingApi(false);
       }
@@ -98,7 +98,8 @@ export default function ExplorePage() {
       setApiPlaces([]);
       setApiError(null);
     }
-  }, [selectedCategory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, t]);
 
   // Search with API when search query changes
   useEffect(() => {
@@ -125,11 +126,11 @@ export default function ExplorePage() {
         setApiPlaces(places);
 
         if (tourPlaces.length === 0) {
-          setApiError(`"${searchQuery}"에 대한 검색 결과가 없습니다.`);
+          setApiError(`"${searchQuery}" ${t('noSearchResults')}`);
         }
       } catch (error) {
         console.error('Failed to search places:', error);
-        setApiError('검색 중 오류가 발생했습니다.');
+        setApiError(t('searchError'));
       } finally {
         setIsLoadingApi(false);
       }
@@ -140,7 +141,8 @@ export default function ExplorePage() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedCategory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedCategory, t]);
 
   // Load place detail when a place is selected
   useEffect(() => {
@@ -183,7 +185,7 @@ export default function ExplorePage() {
     };
     addItem(newItem);
     
-    showToast(`${place.name}이(가) 일정에 추가되었습니다!`, 'success');
+    showToast(`${place.name} ${t('addedToItinerary')}`, 'success');
   };
 
   return (
@@ -212,7 +214,7 @@ export default function ExplorePage() {
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 w-5 h-5 flex items-center justify-center"
-              aria-label="검색어 삭제"
+              aria-label={t('clearSearch')}
             >
               ✕
             </button>
