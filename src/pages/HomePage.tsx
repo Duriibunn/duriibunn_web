@@ -1,12 +1,27 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Map } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { auth } from '../firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { getRecommendedPlaces } from '../data/mockPlaces';
 import { getRecommendedHotels } from '../data/mockHotels';
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
   const recommendedAttractions = getRecommendedPlaces(4);
   const recommendedHotels = getRecommendedHotels(3);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
@@ -14,11 +29,20 @@ export default function HomePage() {
       <div className="relative bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="text-center">
+            {/* 로그인된 사용자 환영 메시지 */}
+            {user && (
+              <div className="mb-6">
+                <p className="text-2xl font-semibold text-gray-800">
+                  {user.displayName || user.email?.split('@')[0]}{t('welcomeUser')}
+                </p>
+              </div>
+            )}
+            
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              언제 떠나시나요?
+              {t('smartRoutePlanner')}
             </h1>
             <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
-              여행 일정을 입력하면 맞춤 추천과 자동 경로 계획을 도와드립니다.
+              {t('aiPoweredDescription')}
             </p>
 
             <div className="mt-8">
@@ -26,11 +50,11 @@ export default function HomePage() {
                 onClick={() => navigate('/create-trip')}
                 className="px-12 py-5 bg-teal-500 text-white text-xl font-bold rounded-2xl hover:bg-teal-600 shadow-2xl"
               >
-                여행 일정 만들기
+                {t('startPlanning')}
               </button>
             </div>
 
-            <p className="text-sm text-gray-500 mt-8">추천 숙소와 관광지를 확인해보세요</p>
+            <p className="text-sm text-gray-500 mt-8">{t('recommendedDestinations')}</p>
           </div>
         </div>
 
@@ -49,7 +73,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Hotels */}
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">추천 숙소</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t('recommendedHotels')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {recommendedHotels.map((h) => (
                 <div key={h.id} className="bg-white rounded-xl overflow-hidden shadow-sm">
@@ -64,17 +88,17 @@ export default function HomePage() {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-semibold text-gray-900">{h.rating}</div>
-                        <div className="text-xs text-gray-500">후기</div>
+                        <div className="text-xs text-gray-500">{t('reviews')}</div>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600 mt-3">{h.description}</p>
                     <div className="mt-4 flex gap-2">
-                      <Link to="/explore" className="text-sm text-primary-600">자세히 보기</Link>
+                      <Link to="/explore" className="text-sm text-primary-600">{t('viewDetails')}</Link>
                       <button
                         onClick={() => navigate('/create-trip')}
                         className="ml-auto text-sm px-3 py-2 bg-primary-50 text-primary-700 rounded-md"
                       >
-                        숙소로 선택
+                        {t('selectHotel')}
                       </button>
                     </div>
                   </div>
@@ -85,7 +109,7 @@ export default function HomePage() {
 
           {/* Attractions */}
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">추천 관광지</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t('recommendedAttractions')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {recommendedAttractions.map((p) => (
                 <div key={p.id} className="bg-white rounded-xl overflow-hidden shadow-sm p-4">
@@ -100,7 +124,7 @@ export default function HomePage() {
                           onClick={() => navigate('/create-trip')}
                           className="text-sm px-3 py-2 bg-primary-50 text-primary-700 rounded-md"
                         >
-                          일정에 추가
+                          {t('addToItinerary')}
                         </button>
                       </div>
                     </div>
@@ -115,8 +139,8 @@ export default function HomePage() {
       {/* How It Works (keep smaller) */}
       <div className="bg-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">간단한 3단계</h2>
-          <p className="text-gray-600">장소 선택 → 일정 구성 → 경로 확인</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('simpleSteps')}</h2>
+          <p className="text-gray-600">{t('stepsDescription')}</p>
         </div>
       </div>
 

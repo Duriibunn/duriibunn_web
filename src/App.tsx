@@ -12,6 +12,8 @@ import TripDetailPage from './pages/TripDetailPage';
 import CreateTripPage from './pages/CreateTripPage';
 import SelectPlacesPage from './pages/SelectPlacesPage';
 import DailySchedulePage from './pages/DailySchedulePage';
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 import Toast, { useToast } from './components/Toast';
 import type { DailyItinerary } from './types';
 
@@ -44,21 +46,32 @@ function AppContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <TopBar />
-      <main className="flex flex-col flex-1">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/myplan" element={<MyPlanPage />} />
-          <Route path="/trip/:id" element={<TripDetailPage />} />
-          <Route path="/create-trip" element={<CreateTripPage />} />
-          <Route path="/create-trip/select-places" element={<SelectPlacesPage />} />
-          <Route path="/create-trip/schedule" element={<DailySchedulePage />} />
-          <Route path="/community" element={<CommunityPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+      <Routes>
+        {/* Auth Pages - No TopBar */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        
+        {/* Main App Pages - With TopBar */}
+        <Route path="/*" element={
+          <>
+            <TopBar />
+            <main className="flex flex-col flex-1">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/planner" element={<PlannerPage />} />
+                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/myplan" element={<MyPlanPage />} />
+                <Route path="/trip/:id" element={<TripDetailPage />} />
+                <Route path="/create-trip" element={<CreateTripPage />} />
+                <Route path="/create-trip/select-places" element={<SelectPlacesPage />} />
+                <Route path="/create-trip/schedule" element={<DailySchedulePage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </>
+        } />
+      </Routes>
 
       {/* Toast notifications */}
       {toasts.map((toast) => (

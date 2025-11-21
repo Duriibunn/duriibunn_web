@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useItinerary } from '../contexts/ItineraryContext';
 import type { Place } from '../types';
 import PlaceCard from '../components/PlaceCard';
@@ -17,15 +18,6 @@ import {
 } from '../utils/publicDataApi';
 import { showToast } from '../components/Toast';
 
-const categories = [
-  { value: 'all', label: '전체' },
-  { value: 'attraction', label: '관광지', contentType: CONTENT_TYPES.TOURIST_SPOT },
-  { value: 'culture', label: '문화시설', contentType: CONTENT_TYPES.CULTURE },
-  { value: 'hotel', label: '숙박', contentType: CONTENT_TYPES.ACCOMMODATION },
-  { value: 'restaurant', label: '음식점', contentType: CONTENT_TYPES.RESTAURANT },
-  { value: 'shopping', label: '쇼핑', contentType: CONTENT_TYPES.SHOPPING },
-];
-
 // Convert TourPlace to Place type
 function convertTourPlaceToPlace(tourPlace: TourPlace): Place {
   return {
@@ -43,6 +35,7 @@ function convertTourPlaceToPlace(tourPlace: TourPlace): Place {
 }
 
 export default function ExplorePage() {
+  const { t } = useTranslation();
   const { addItem, state } = useItinerary();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +45,15 @@ export default function ExplorePage() {
   const [isLoadingApi, setIsLoadingApi] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  const categories = [
+    { value: 'all', label: t('allCategory') },
+    { value: 'attraction', label: t('attraction'), contentType: CONTENT_TYPES.TOURIST_SPOT },
+    { value: 'culture', label: t('culture'), contentType: CONTENT_TYPES.CULTURE },
+    { value: 'hotel', label: t('accommodation'), contentType: CONTENT_TYPES.ACCOMMODATION },
+    { value: 'restaurant', label: t('restaurant'), contentType: CONTENT_TYPES.RESTAURANT },
+    { value: 'shopping', label: t('shopping'), contentType: CONTENT_TYPES.SHOPPING },
+  ];
 
   // Load places from public data API when category changes
   useEffect(() => {
@@ -189,9 +191,9 @@ export default function ExplorePage() {
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          장소 탐색
+          {t('placeExploration')}
         </h1>
-        <p className="text-lg text-gray-600">방문하고 싶은 장소를 찾아 일정에 추가하세요</p>
+        <p className="text-lg text-gray-600">{t('findAndAddPlaces')}</p>
       </div>
 
       {/* Search & Filters */}
@@ -201,7 +203,7 @@ export default function ExplorePage() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="장소 이름으로 검색 (2글자 이상)"
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-full pl-12 pr-12 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
@@ -239,7 +241,7 @@ export default function ExplorePage() {
       {isLoadingApi && (
         <div className="flex flex-col items-center justify-center py-16">
           <LoadingSpinner size="lg" />
-          <p className="text-gray-600 mt-4">공공데이터에서 장소 정보를 불러오는 중...</p>
+          <p className="text-gray-600 mt-4">{t('loadingPlaces')}</p>
         </div>
       )}
 
@@ -248,7 +250,6 @@ export default function ExplorePage() {
         <div className="flex flex-col items-center justify-center py-12 bg-amber-50 border border-amber-200 rounded-xl">
           <AlertCircle className="h-12 w-12 text-amber-500 mb-3" />
           <p className="text-amber-900 font-medium mb-1">{apiError}</p>
-          <p className="text-amber-700 text-sm">기본 장소 목록을 표시합니다.</p>
         </div>
       )}
 
@@ -256,10 +257,10 @@ export default function ExplorePage() {
       {!isLoadingApi && (
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            모든 장소 ({filteredPlaces.length})
+            {t('allPlaces')} ({filteredPlaces.length})
             {apiPlaces.length > 0 && (
               <span className="ml-2 text-sm font-normal text-primary-600">
-                ⚡ 공공데이터 {apiPlaces.length}개 포함
+                ⚡ {t('publicDataIncluded')} {apiPlaces.length}{t('includedSuffix')}
               </span>
             )}
           </h2>
@@ -276,7 +277,7 @@ export default function ExplorePage() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <p className="text-gray-500 text-lg">검색 결과가 없습니다.</p>
+              <p className="text-gray-500 text-lg">{t('noResults')}</p>
             </div>
           )}
         </div>
@@ -306,16 +307,16 @@ export default function ExplorePage() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 lg:hidden">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div>
-              <p className="text-sm text-gray-600">현재 일정</p>
+              <p className="text-sm text-gray-600">{t('currentItinerary')}</p>
               <p className="font-semibold text-gray-900">
-                {state.currentItinerary.items.length}개 장소
+                {state.currentItinerary.items.length}{t('placesCount')}
               </p>
             </div>
             <button
               onClick={() => window.location.href = '/planner'}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              일정 보기
+              {t('viewItinerary')}
             </button>
           </div>
         </div>

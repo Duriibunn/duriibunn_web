@@ -1,17 +1,42 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Map, Compass, Calendar, Users, Menu } from 'lucide-react';
-import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Map, Compass, Calendar, Users, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { auth } from '../firebase/config';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import LanguageSwitcher from './LanguageSwitcher';
 
 export default function TopBar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/');
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const navLinks = [
-    { path: '/create-trip', label: '일정 생성', icon: Compass },
-    { path: '/explore', label: '장소 탐색', icon: Map },
-    { path: '/myplan', label: '내 일정', icon: Calendar },
-    { path: '/community', label: '커뮤니티', icon: Users },
+    { path: '/create-trip', label: t('createTrip'), icon: Compass },
+    { path: '/explore', label: t('explore'), icon: Map },
+    { path: '/myplan', label: t('myPlan'), icon: Calendar },
+    { path: '/community', label: t('community'), icon: Users },
   ];
 
   return (
@@ -51,9 +76,43 @@ export default function TopBar() {
             })}
           </nav>
 
-          {/* Language Switcher */}
-          <div className="flex items-center space-x-2">
+          {/* Right Side - Language & Auth */}
+          <div className="flex items-center space-x-3">
             <LanguageSwitcher />
+            
+            {/* Auth - Desktop */}
+            <div className="hidden md:flex items-center space-x-2">
+              {user ? (
+                <>
+                  <div className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700">
+                    <UserIcon className="h-4 w-4" />
+                    <span>{user.displayName || user.email?.split('@')[0]}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-1 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{t('logout')}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  >
+                    {t('login')}
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
+                  >
+                    {t('signUp')}
+                  </Link>
+                </>
+              )}
+            </div>
             
             {/* Mobile menu button */}
             <button
@@ -89,6 +148,42 @@ export default function TopBar() {
                 </Link>
               );
             })}
+            
+            {/* Mobile Auth */}
+            <div className="pt-2 mt-2 border-t border-gray-100 space-y-2">
+              {user ? (
+                <>
+                  <div className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700">
+                    <UserIcon className="h-4 w-4" />
+                    <span>{user.displayName || user.email?.split('@')[0]}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center justify-center space-x-2 w-full px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{t('logout')}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block w-full text-center px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    {t('login')}
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block w-full text-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
+                  >
+                    {t('signUp')}
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       )}
