@@ -1,10 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Star, TrendingUp, Clock, ChevronRight } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { auth } from '../firebase/config';
-import { onAuthStateChanged } from 'firebase/auth';
-import type { User } from 'firebase/auth';
 import { getSeoulTouristSpots, type TourPlace } from '../utils/publicDataApi';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -27,17 +24,8 @@ declare global {
 export default function HomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
   const [topPlaces, setTopPlaces] = useState<TourPlace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   // Load top tourist spots from API
   useEffect(() => {
@@ -106,176 +94,130 @@ export default function HomePage() {
   }, [topPlaces, navigate]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {/* User Welcome */}
-          {user && (
-            <div className="mb-4">
-              <p className="text-lg font-medium text-primary-600">
-                {user.displayName || user.email?.split('@')[0]}{t('welcomeUser')}
-              </p>
-            </div>
-          )}
-          
+      <div className="relative bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           {/* Main Heading */}
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            <span className="text-primary-500">두리번</span> {t('smartRoutePlanner')}
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+            나만의 여행 일정,<br />
+            <span className="text-primary-500">두리번</span>으로<br />
+            간편해졌어요
           </h1>
           
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl">
+          <p className="text-xl md:text-2xl text-gray-600 mb-12">
             {t('aiPoweredDescription')}
           </p>
 
           {/* CTA Button */}
           <button
             onClick={() => navigate('/create-trip')}
-            className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-medium inline-flex items-center gap-2"
+            className="px-8 py-4 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-lg"
           >
             {t('startPlanning')}
-            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Map Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900">{t('popularPlaces')}</h2>
-                <p className="text-gray-600 mt-1">{t('popularPlacesDesc')}</p>
-              </div>
-              <div className="flex items-center gap-2 text-primary-600">
-                <MapPin className="w-5 h-5" />
-                <span className="text-sm font-medium">{topPlaces.length} {t('topPlaces')}</span>
-              </div>
-            </div>
-          </div>
+      <div className="bg-gray-50 py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 text-center mb-16">
+            여행을 한눈에,<br />그리고 한 번에!
+          </h2>
           
-          <div className="aspect-video bg-gray-100">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : (
-              <div id="home-map" className="w-full h-full"></div>
-            )}
+          <div className="rounded-2xl overflow-hidden shadow-xl bg-white">
+            <div className="aspect-video bg-gray-100">
+              {isLoading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <LoadingSpinner size="lg" />
+                </div>
+              ) : (
+                <div id="home-map" className="w-full h-full"></div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Top Places Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-primary-500" />
-            {t('recommendedAttractions')}
-          </h2>
-          <button
-            onClick={() => navigate('/explore')}
-            className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1 transition-colors"
-          >
-            {t('viewAll')}
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <LoadingSpinner size="lg" />
+      {/* Places Section */}
+      <div className="bg-white py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              어떤 취향이든,<br />다 맞춰주니까
+            </h2>
+            <p className="text-xl text-gray-600">
+              {t('popularPlacesDesc')}
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {topPlaces.map((place) => (
-              <div
-                key={place.contentid}
-                className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => navigate('/explore')}
-              >
-                {/* Place Image */}
-                <div className="h-48 bg-gray-100 relative overflow-hidden">
-                  {place.firstimage ? (
-                    <img
-                      src={place.firstimage}
-                      alt={place.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <MapPin className="w-12 h-12 text-gray-300" />
-                    </div>
-                  )}
-                  {/* Badge */}
-                  <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    <span className="text-xs font-medium text-gray-900">HOT</span>
-                  </div>
-                </div>
 
-                {/* Place Info */}
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topPlaces.map((place) => (
+                <div
+                  key={place.contentid}
+                  className="group cursor-pointer"
+                  onClick={() => navigate('/explore')}
+                >
+                  {/* Place Image */}
+                  <div className="aspect-4/3 bg-gray-100 rounded-2xl overflow-hidden mb-4">
+                    {place.firstimage ? (
+                      <img
+                        src={place.firstimage}
+                        alt={place.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <MapPin className="w-12 h-12 text-gray-300" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Place Info */}
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     {place.title}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                  <p className="text-sm text-gray-600 line-clamp-2">
                     {place.addr1 || t('noAddress')}
                   </p>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate('/create-trip');
-                    }}
-                    className="w-full px-4 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 font-medium text-sm transition-colors"
-                  >
-                    {t('addToItinerary')}
-                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+          
+          <div className="text-center mt-12">
+            <button
+              onClick={() => navigate('/explore')}
+              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-gray-400 transition-colors font-medium"
+            >
+              {t('viewAll')}
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* How It Works Section */}
-      <div className="bg-white border-t border-gray-200 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">{t('simpleSteps')}</h2>
-            <p className="text-gray-600">{t('stepsDescription')}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Step 1 */}
-            <div className="bg-gray-50 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <MapPin className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('step1')}</h3>
-              <p className="text-sm text-gray-600">{t('step1Desc')}</p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="bg-gray-50 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('step2')}</h3>
-              <p className="text-sm text-gray-600">{t('step2Desc')}</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="bg-gray-50 rounded-xl p-6 text-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <TrendingUp className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('step3')}</h3>
-              <p className="text-sm text-gray-600">{t('step3Desc')}</p>
-            </div>
-          </div>
+      {/* CTA Section */}
+      <div className="bg-gray-50 py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            나를 아는 여행 앱<br />
+            <span className="text-primary-500">두리번</span>
+          </h2>
+          <p className="text-xl text-gray-600 mb-10">
+            지금 바로 다운로드하고 여행을 떠나세요
+          </p>
+          <button
+            onClick={() => navigate('/create-trip')}
+            className="px-10 py-4 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-lg"
+          >
+            {t('createTripNow')}
+          </button>
         </div>
       </div>
     </div>
