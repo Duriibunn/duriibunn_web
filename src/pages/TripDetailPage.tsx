@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useItinerary } from '../contexts/ItineraryContext';
 import type { ItineraryItem } from '../types';
 import MapPanel from '../components/MapPanel';
@@ -28,6 +29,7 @@ const PLACE_COLORS = [
 ];
 
 export default function TripDetailPage() {
+  const { t } = useTranslation();
   useParams<{ id: string }>(); // For future use
   const navigate = useNavigate();
   const { state } = useItinerary();
@@ -48,15 +50,15 @@ export default function TripDetailPage() {
   }, [items.length]);
 
   const getCategoryLabel = (category?: string) => {
-    const labels: Record<string, string> = {
-      attraction: '관광명소',
-      restaurant: '음식점',
-      cafe: '카페',
-      hotel: '숙박',
-      shopping: '쇼핑',
-      culture: '문화시설',
+    const categoryMap: Record<string, string> = {
+      attraction: t('attraction'),
+      restaurant: t('restaurant'),
+      cafe: 'cafe',
+      hotel: t('accommodation'),
+      shopping: t('shopping'),
+      culture: t('culture'),
     };
-    return labels[category || ''] || '장소';
+    return categoryMap[category || ''] || t('place');
   };
 
   const getCategoryIcon = (category?: string) => {
@@ -82,25 +84,25 @@ export default function TripDetailPage() {
   };
 
   const formatDuration = (mins?: number) => {
-    if (!mins) return '60분';
+    if (!mins) return t('60minutes');
     const hours = Math.floor(mins / 60);
     const minutes = mins % 60;
     if (hours > 0) {
-      return minutes > 0 ? `${hours}시간 ${minutes}분` : `${hours}시간`;
+      return minutes > 0 ? `${hours}${t('hours')} ${minutes}${t('minutes')}` : `${hours}${t('hours')}`;
     }
-    return `${minutes}분`;
+    return `${minutes}${t('minutes')}`;
   };
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: currentItinerary?.title || '나의 여행 일정',
-        text: `${items.length}개 장소를 방문하는 멋진 여행!`,
+        title: currentItinerary?.title || t('myTravelPlan'),
+        text: `${items.length}${t('placesGreatTrip')}`,
         url: window.location.href,
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('링크가 복사되었습니다!');
+      alert(t('linkCopied'));
     }
   };
 
@@ -144,10 +146,10 @@ export default function TripDetailPage() {
         {/* Trip Title */}
         <div className="px-6 pt-2 pb-5">
           <h1 className="mb-1 text-2xl font-bold text-gray-900">
-            {currentItinerary?.title || '나의 여행 일정'}
+            {currentItinerary?.title || t('myTravelPlan')}
           </h1>
           <p className="text-sm text-gray-500">
-            {currentItinerary?.date || '2024년 11월 14일'} · {items.length}개 장소
+            {currentItinerary?.date || '2024년 11월 14일'} · {items.length}{t('placesCount')}
           </p>
         </div>
       </header>
@@ -193,12 +195,12 @@ export default function TripDetailPage() {
             {items.length === 0 ? (
               <div className="py-16 text-center">
                 <MapPin className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500">아직 추가된 장소가 없습니다</p>
+                <p className="text-gray-500">{t('noPlacesAdded')}</p>
                 <button
                   onClick={() => navigate('/explore')}
                   className="px-6 py-2 mt-4 text-white transition-colors bg-primary-500 rounded-xl hover:bg-primary-600"
                 >
-                  장소 추가하기
+                  {t('addPlaces')}
                 </button>
               </div>
             ) : (
@@ -331,7 +333,7 @@ export default function TripDetailPage() {
                           ))}
                         </div>
                         <span className="text-sm text-gray-600">
-                          {selectedPlace.place.rating} · 리뷰 {Math.floor(Math.random() * 5000) + 100}개
+                          {selectedPlace.place.rating} · {t('reviews')} {Math.floor(Math.random() * 5000) + 100}
                         </span>
                       </div>
                     )}
@@ -357,14 +359,14 @@ export default function TripDetailPage() {
                     className="flex items-center justify-center flex-1 px-6 py-3 space-x-2 font-medium text-white transition-colors bg-primary-500 rounded-xl hover:bg-primary-600"
                   >
                     <Navigation className="w-5 h-5" />
-                    <span>길찾기</span>
+                    <span>{t('directions')}</span>
                   </button>
                   <button
                     onClick={() => navigate('/planner')}
                     className="flex items-center justify-center px-6 py-3 space-x-2 font-medium text-gray-700 transition-colors bg-gray-100 rounded-xl hover:bg-gray-200"
                   >
                     <Edit3 className="w-5 h-5" />
-                    <span>수정</span>
+                    <span>{t('edit')}</span>
                   </button>
                 </div>
               </div>

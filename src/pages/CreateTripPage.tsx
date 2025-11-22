@@ -1,51 +1,53 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, ArrowRight, Sparkles, Users, Heart } from 'lucide-react';
 
-const KOREAN_CITIES = [
-  { id: 'gapyeong', name: '가평', emoji: '🏞️', description: '청평호와 아침고요수목원' },
-  { id: 'yangpyeong', name: '양평', emoji: '🌳', description: '두물머리와 자연 휴양지' },
-  { id: 'gangneung', name: '강릉', emoji: '�', description: '커피와 바다의 도시' },
-  { id: 'sokcho', name: '속초', emoji: '🦑', description: '설악산과 동해바다' },
-  { id: 'gyeongju', name: '경주', emoji: '🏰', description: '천년 고도, 살아있는 박물관' },
-  { id: 'busan', name: '부산', emoji: '🏖️', description: '해운대와 광안리 해변' },
-  { id: 'yeosu', name: '여수', emoji: '🌅', description: '아름다운 밤바다와 케이블카' },
-  { id: 'incheon', name: '인천', emoji: '✈️', description: '월미도와 차이나타운' },
-  { id: 'jeonju', name: '전주', emoji: '🏛️', description: '한옥마을과 비빔밥' },
-  { id: 'jeju', name: '제주', emoji: '🌴', description: '한국의 하와이, 자연의 보고' },
-  { id: 'chuncheon', name: '춘천', emoji: '🦆', description: '닭갈비와 남이섬' },
-  { id: 'hongcheon', name: '홍천', emoji: '�', description: '비발디파크와 청정자연' },
-  { id: 'taean', name: '태안', emoji: '🏖️', description: '안면도와 서해바다' },
-  { id: 'tongyeong', name: '통영', emoji: '🚡', description: '케이블카와 동피랑 벽화마을' },
-  { id: 'geoje', name: '거제', emoji: '⚓', description: '해금강과 바람의 언덕' },
-  { id: 'namhae', name: '남해', emoji: '🌊', description: '독일마을과 보리암' },
-  { id: 'pohang', name: '포항', emoji: '🌅', description: '호미곶과 과메기의 고장' },
-  { id: 'andong', name: '안동', emoji: '�', description: '하회마을과 전통문화' },
-];
-
-const TRAVEL_COMPANIONS = [
-  { id: 'solo', name: '혼자', emoji: '🧳' },
-  { id: 'friends', name: '친구와', emoji: '👥' },
-  { id: 'couple', name: '연인과', emoji: '💑' },
-  { id: 'spouse', name: '배우자와', emoji: '💏' },
-  { id: 'children', name: '아이와', emoji: '👨‍👩‍👧' },
-  { id: 'parents', name: '부모님과', emoji: '👴👵' },
-  { id: 'other', name: '기타', emoji: '👨‍👩‍👧‍👦' },
-];
-
-const TRAVEL_STYLES = [
-  { id: 'activity', name: '체험 액티비티', emoji: '🎢' },
-  { id: 'hotplace', name: 'SNS 핫플레이스', emoji: '📸' },
-  { id: 'nature', name: '자연과 함께', emoji: '🏞️' },
-  { id: 'tourist', name: '유명 관광지는 필수', emoji: '🗺️' },
-  { id: 'healing', name: '여유롭게 힐링', emoji: '🧘' },
-  { id: 'culture', name: '문화 예술 역사', emoji: '🎨' },
-  { id: 'local', name: '여행지 느낌 물씬', emoji: '🏘️' },
-  { id: 'shopping', name: '쇼핑은 열정적으로', emoji: '🛍️' },
-  { id: 'food', name: '관광보다 먹방', emoji: '🍜' },
-];
-
 export default function CreateTripPage() {
+  const { t } = useTranslation();
+  
+  const KOREAN_CITIES = [
+    { id: 'gapyeong', nameKey: 'city_gapyeong', emoji: '🏞️', descKey: 'city_gapyeong_desc' },
+    { id: 'yangpyeong', nameKey: 'city_yangpyeong', emoji: '🌳', descKey: 'city_yangpyeong_desc' },
+    { id: 'gangneung', nameKey: 'city_gangneung', emoji: '☕', descKey: 'city_gangneung_desc' },
+    { id: 'sokcho', nameKey: 'city_sokcho', emoji: '🦑', descKey: 'city_sokcho_desc' },
+    { id: 'gyeongju', nameKey: 'city_gyeongju', emoji: '🏰', descKey: 'city_gyeongju_desc' },
+    { id: 'busan', nameKey: 'city_busan', emoji: '🏖️', descKey: 'city_busan_desc' },
+    { id: 'yeosu', nameKey: 'city_yeosu', emoji: '🌅', descKey: 'city_yeosu_desc' },
+    { id: 'incheon', nameKey: 'city_incheon', emoji: '✈️', descKey: 'city_incheon_desc' },
+    { id: 'jeonju', nameKey: 'city_jeonju', emoji: '🏛️', descKey: 'city_jeonju_desc' },
+    { id: 'jeju', nameKey: 'city_jeju', emoji: '🌴', descKey: 'city_jeju_desc' },
+    { id: 'chuncheon', nameKey: 'city_chuncheon', emoji: '🦆', descKey: 'city_chuncheon_desc' },
+    { id: 'hongcheon', nameKey: 'city_hongcheon', emoji: '⛷️', descKey: 'city_hongcheon_desc' },
+    { id: 'taean', nameKey: 'city_taean', emoji: '🏖️', descKey: 'city_taean_desc' },
+    { id: 'tongyeong', nameKey: 'city_tongyeong', emoji: '🚡', descKey: 'city_tongyeong_desc' },
+    { id: 'geoje', nameKey: 'city_geoje', emoji: '⚓', descKey: 'city_geoje_desc' },
+    { id: 'namhae', nameKey: 'city_namhae', emoji: '🌊', descKey: 'city_namhae_desc' },
+    { id: 'pohang', nameKey: 'city_pohang', emoji: '🌅', descKey: 'city_pohang_desc' },
+    { id: 'andong', nameKey: 'city_andong', emoji: '🏛️', descKey: 'city_andong_desc' },
+  ];
+
+  const TRAVEL_COMPANIONS = [
+    { id: 'solo', nameKey: 'companion_solo', emoji: '🧳' },
+    { id: 'friends', nameKey: 'companion_friends', emoji: '👥' },
+    { id: 'couple', nameKey: 'companion_couple', emoji: '💑' },
+    { id: 'spouse', nameKey: 'companion_spouse', emoji: '💏' },
+    { id: 'children', nameKey: 'companion_children', emoji: '👨‍👩‍👧' },
+    { id: 'parents', nameKey: 'companion_parents', emoji: '👴👵' },
+    { id: 'other', nameKey: 'companion_other', emoji: '👨‍👩‍👧‍👦' },
+  ];
+
+  const TRAVEL_STYLES = [
+    { id: 'activity', nameKey: 'style_activity', emoji: '🎢' },
+    { id: 'hotplace', nameKey: 'style_hotplace', emoji: '📸' },
+    { id: 'nature', nameKey: 'style_nature', emoji: '🏞️' },
+    { id: 'tourist', nameKey: 'style_tourist', emoji: '🗺️' },
+    { id: 'healing', nameKey: 'style_healing', emoji: '🧘' },
+    { id: 'culture', nameKey: 'style_culture', emoji: '🎨' },
+    { id: 'local', nameKey: 'style_local', emoji: '🏘️' },
+    { id: 'shopping', nameKey: 'style_shopping', emoji: '🛍️' },
+    { id: 'food', nameKey: 'style_food', emoji: '🍜' },
+  ];
   const navigate = useNavigate();
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -67,11 +69,12 @@ export default function CreateTripPage() {
 
   const handleNext = () => {
     if (!selectedCity || !startDate || !endDate) {
-      alert('모든 정보를 입력해주세요!');
+      alert(t('fillAllFields'));
       return;
     }
 
-    const cityName = KOREAN_CITIES.find(c => c.id === selectedCity)?.name || '';
+    const city = KOREAN_CITIES.find(c => c.id === selectedCity);
+    const cityName = city ? t(city.nameKey) : '';
     const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
 
     // Save to sessionStorage
@@ -81,7 +84,7 @@ export default function CreateTripPage() {
       startDate,
       endDate,
       days,
-      title: tripTitle || `${cityName} ${days}일 여행`,
+      title: tripTitle || `${cityName} ${days}${t('daysTrip')}`,
       companion,
       travelStyle,
     }));
@@ -102,8 +105,8 @@ export default function CreateTripPage() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-teal-600">1 / 3 단계</span>
-            <span className="text-sm text-gray-500">날짜 & 도시 선택</span>
+            <span className="text-sm font-medium text-teal-600">{t('step1Of3')}</span>
+            <span className="text-sm text-gray-500">{t('selectDateAndCity')}</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div className="h-full bg-teal-500 rounded-full" style={{ width: '33%' }}></div>
@@ -116,10 +119,10 @@ export default function CreateTripPage() {
             <Sparkles className="w-8 h-8 text-teal-600" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            여행 계획을 시작해볼까요?
+            {t('createTripTitle')}
           </h1>
           <p className="text-lg text-gray-600">
-            날짜와 도시를 선택하면 맞춤 장소를 추천해드립니다
+            {t('createTripDesc')}
           </p>
         </div>
 
@@ -128,13 +131,13 @@ export default function CreateTripPage() {
           {/* Trip Title */}
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
-              여행 제목 (선택사항)
+              {t('tripTitleOptional')}
             </label>
             <input
               type="text"
               value={tripTitle}
               onChange={(e) => setTripTitle(e.target.value)}
-              placeholder="예: 가족과 함께하는 제주도 여행"
+              placeholder={t('tripTitlePlaceholder')}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base text-gray-900 placeholder:text-gray-400"
             />
           </div>
@@ -143,11 +146,11 @@ export default function CreateTripPage() {
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               <Calendar className="inline w-4 h-4 mr-1" />
-              여행 기간
+              {t('travelPeriod')}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-gray-600 mb-2">출발일</label>
+                <label className="block text-xs text-gray-600 mb-2">{t('departureDate')}</label>
                 <input
                   type="date"
                   value={startDate}
@@ -156,7 +159,7 @@ export default function CreateTripPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-2">복귀일</label>
+                <label className="block text-xs text-gray-600 mb-2">{t('returnDate')}</label>
                 <input
                   type="date"
                   value={endDate}
@@ -167,7 +170,7 @@ export default function CreateTripPage() {
               </div>
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              총 <span className="font-semibold text-teal-600">{getDayCount()}일</span> 여행
+              {t('totalDays')} <span className="font-semibold text-teal-600">{getDayCount()}{t('daysTrip')}</span>
             </p>
           </div>
 
@@ -175,7 +178,7 @@ export default function CreateTripPage() {
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               <MapPin className="inline w-4 h-4 mr-1" />
-              여행 도시
+              {t('travelCity')}
             </label>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {KOREAN_CITIES.map((city) => (
@@ -189,8 +192,8 @@ export default function CreateTripPage() {
                   }`}
                 >
                   <div className="text-3xl mb-2">{city.emoji}</div>
-                  <div className="font-semibold text-gray-900 mb-1">{city.name}</div>
-                  <div className="text-xs text-gray-500 leading-tight">{city.description}</div>
+                  <div className="font-semibold text-gray-900 mb-1">{t(city.nameKey)}</div>
+                  <div className="text-xs text-gray-500 leading-tight">{t(city.descKey)}</div>
                 </button>
               ))}
             </div>
@@ -200,7 +203,7 @@ export default function CreateTripPage() {
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               <Users className="inline w-4 h-4 mr-1" />
-              누구와 함께 (선택사항)
+              {t('travelWithOptional')}
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {TRAVEL_COMPANIONS.map((comp) => (
@@ -214,7 +217,7 @@ export default function CreateTripPage() {
                   }`}
                 >
                   <div className="text-2xl mb-1">{comp.emoji}</div>
-                  <div className="text-xs font-medium text-gray-900">{comp.name}</div>
+                  <div className="text-xs font-medium text-gray-900">{t(comp.nameKey)}</div>
                 </button>
               ))}
             </div>
@@ -224,7 +227,7 @@ export default function CreateTripPage() {
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               <Heart className="inline w-4 h-4 mr-1" />
-              여행 스타일 (중복 선택 가능)
+              {t('travelStyleMultiple')}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {TRAVEL_STYLES.map((style) => (
@@ -238,7 +241,7 @@ export default function CreateTripPage() {
                   }`}
                 >
                   <span className="text-xl">{style.emoji}</span>
-                  <span className="text-sm font-medium text-gray-900">{style.name}</span>
+                  <span className="text-sm font-medium text-gray-900">{t(style.nameKey)}</span>
                 </button>
               ))}
             </div>
@@ -251,14 +254,14 @@ export default function CreateTripPage() {
             onClick={() => navigate('/')}
             className="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors"
           >
-            취소
+            {t('cancel')}
           </button>
           <button
             onClick={handleNext}
             disabled={!selectedCity}
             className="flex items-center space-x-2 px-8 py-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
-            <span>다음</span>
+            <span>{t('next')}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
