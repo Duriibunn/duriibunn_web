@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
 import { ItineraryProvider } from './contexts/ItineraryContext';
 import { useItinerary } from './contexts/useItinerary';
 import TopBar from './components/TopBar';
@@ -10,19 +11,22 @@ import MyPlanPage from './pages/MyPlanPage';
 import CommunityPage from './pages/CommunityPage';
 import TripDetailPage from './pages/TripDetailPage';
 import CreateTripPage from './pages/CreateTripPage';
-import SelectPlacesPage from './pages/SelectPlacesPage';
+import RecommendationsPage from './pages/RecommendationsPage';
 import DailySchedulePage from './pages/DailySchedulePage';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import Toast, { useToast } from './components/Toast';
+import Toast from './components/Toast';
+import { useToast } from './hooks/toastManager';
 import type { DailyItinerary } from './types';
 
 function App() {
   return (
     <Router>
-      <ItineraryProvider>
-        <AppContent />
-      </ItineraryProvider>
+      <AuthProvider>
+        <ItineraryProvider>
+          <AppContent />
+        </ItineraryProvider>
+      </AuthProvider>
     </Router>
   );
 }
@@ -58,14 +62,26 @@ function AppContent() {
             <main className="flex flex-col flex-1">
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/planner" element={<PlannerPage />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/myplan" element={<MyPlanPage />} />
-                <Route path="/trip/:id" element={<TripDetailPage />} />
-                <Route path="/create-trip" element={<CreateTripPage />} />
-                <Route path="/create-trip/select-places" element={<SelectPlacesPage />} />
-                <Route path="/create-trip/schedule" element={<DailySchedulePage />} />
                 <Route path="/community" element={<CommunityPage />} />
+                
+                {/* 새 일정 생성 플로우 */}
+                <Route path="/create-trip" element={<CreateTripPage />} />
+                <Route path="/trip/recommendations" element={<RecommendationsPage />} />
+                <Route path="/create-trip/arrange" element={<DailySchedulePage />} />
+                <Route path="/create-trip/map" element={<PlannerPage />} />
+                
+                {/* 일정 상세(타임라인) */}
+                <Route path="/trip/:id" element={<TripDetailPage />} />
+                
+                {/* 레거시 라우트 (리다이렉트) */}
+                <Route path="/trip/select-city" element={<Navigate to="/create-trip" replace />} />
+                <Route path="/trip/select-dates" element={<Navigate to="/create-trip" replace />} />
+                <Route path="/create-trip/select-places" element={<Navigate to="/trip/recommendations" replace />} />
+                <Route path="/create-trip/schedule" element={<Navigate to="/create-trip/arrange" replace />} />
+                <Route path="/planner" element={<Navigate to="/create-trip/map" replace />} />
+                
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>

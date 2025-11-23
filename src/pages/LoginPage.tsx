@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
@@ -8,10 +8,20 @@ import { User, Lock, LogIn, AlertCircle } from 'lucide-react';
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redirectMessage, setRedirectMessage] = useState('');
+
+  useEffect(() => {
+    // 리다이렉트 메시지 확인
+    const state = location.state as { message?: string; from?: string } | null;
+    if (state?.message) {
+      setRedirectMessage(state.message);
+    }
+  }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +32,10 @@ export default function LoginPage() {
       // username을 이메일 형식으로 변환 (Firebase는 이메일 필요)
       const email = `${username}@duriibunn.app`;
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      
+      // 리다이렉트 경로가 있으면 해당 경로로, 없으면 홈으로
+      const state = location.state as { from?: string } | null;
+      navigate(state?.from || '/');
     } catch (err: unknown) {
       console.error('Login error:', err);
       
@@ -71,6 +84,14 @@ export default function LoginPage() {
         {/* Login Form */}
         <div className="p-8 bg-white border border-gray-100 shadow-xl rounded-2xl">
           <form onSubmit={handleLogin} className="space-y-6">
+            {/* Redirect Message */}
+            {redirectMessage && (
+              <div className="flex items-center gap-2 p-4 text-sm text-blue-800 border border-blue-200 bg-blue-50 rounded-xl">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{redirectMessage}</span>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="flex items-center gap-2 p-4 text-sm text-red-800 border border-red-200 bg-red-50 rounded-xl">

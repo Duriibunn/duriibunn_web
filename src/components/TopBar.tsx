@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Map, Compass, Calendar, Users, Menu, LogOut, User as UserIcon } from 'lucide-react';
+import { Map, Compass, Menu, LogOut, User as UserIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { auth } from '../firebase/config';
@@ -33,10 +33,8 @@ export default function TopBar() {
   };
 
   const navLinks = [
-    { path: '/create-trip', label: t('createTrip'), icon: Compass },
-    { path: '/explore', label: t('explore'), icon: Map },
-    { path: '/myplan', label: t('myPlan'), icon: Calendar },
-    { path: '/community', label: t('community'), icon: Users },
+    { path: '/trip/select-city', label: t('createTrip'), icon: Compass },
+    { path: '/explore', label: t('favorites'), icon: Map },
   ];
 
   return (
@@ -47,7 +45,7 @@ export default function TopBar() {
           <Link to="/" className="flex items-center space-x-2">
             <Map className="h-6 w-6 text-primary-500" />
             <span className="text-xl font-semibold text-gray-900">
-              SmartRoute
+              {t('smartRoutePlanner')}
             </span>
           </Link>
 

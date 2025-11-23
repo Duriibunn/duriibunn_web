@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useReducer, useCallback } from 'react';
 import type { DailyItinerary, ItineraryItem, TransportMode, RouteSegment } from '../types';
 import { computeRoute } from '../utils/routeUtils';
@@ -153,8 +154,8 @@ export function ItineraryProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SAVE_ITINERARY', payload: itinerary });
     // Save to Firestore
     try {
-      const { createItinerary, updateItinerary } = await import('../firebase/itineraries');
-      const { showToast } = await import('../components/Toast');
+  const { createItinerary, updateItinerary } = await import('../firebase/itineraries');
+  const { showToast } = await import('../hooks/toastManager');
       
       if (!itinerary.id || itinerary.id.startsWith('it-')) {
         // New itinerary - create in Firestore
@@ -170,7 +171,7 @@ export function ItineraryProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`itinerary-${itinerary.id}`, JSON.stringify(itinerary));
     } catch (error) {
       console.error('Failed to save to Firestore:', error);
-      const { showToast } = await import('../components/Toast');
+  const { showToast } = await import('../hooks/toastManager');
       showToast('저장 중 오류가 발생했습니다', 'error');
       // Fallback to localStorage only
       localStorage.setItem(`itinerary-${itinerary.id}`, JSON.stringify(itinerary));

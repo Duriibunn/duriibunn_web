@@ -1,305 +1,315 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Clock, MapPin, Calendar } from 'lucide-react';
-import { useItinerary } from '../contexts/useItinerary';
-import type { Place, ItineraryItem, DailyItinerary } from '../types';
-import { showToast } from '../components/Toast';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, GripVertical, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
+import { createTrip } from '../firebase/trips';
+import { auth } from '../firebase/config';
 
-interface DaySchedule {
-  day: number;
-  date: string;
-  places: Place[];
+interface Place {
+  id: string;
+  name: string;
+  category: string;
+  image?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+}
+
+interface LocationState {
+  cityName: string;
+  areaCode: number;
+  startDate: string;
+  endDate: string;
+  days: number;
+  companion?: string;
+  travelStyle?: string[];
+  selectedPlaces: Place[];
 }
 
 export default function DailySchedulePage() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { setItinerary } = useItinerary();
-  const [tripData, setTripData] = useState<{city: string; cityName: string; startDate: string; endDate: string; days: number; title: string} | null>(null);
-  const [selectedPlaces, setSelectedPlaces] = useState<Place[]>([]);
-  const [daySchedules, setDaySchedules] = useState<DaySchedule[]>([]);
-  const [selectedDay, setSelectedDay] = useState(1);
+  const state = location.state as LocationState;
+  const { t } = useTranslation();
+
+  const [unassigned, setUnassigned] = useState<Place[]>([]);
+  const [dailySchedules, setDailySchedules] = useState<{ [key: number]: Place[] }>({});
+  const [selectedDay, setSelectedDay] = useState(0);
+  const [draggedItem, setDraggedItem] = useState<{ place: Place; from: 'unassigned' | number } | null>(null);
 
   useEffect(() => {
-    const tripStr = sessionStorage.getItem('newTrip');
-    const placesStr = sessionStorage.getItem('selectedPlaces');
-    
-    if (!tripStr || !placesStr) {
+    if (!state || !state.selectedPlaces) {
       navigate('/create-trip');
       return;
     }
 
-    const trip = JSON.parse(tripStr);
-    const places: Place[] = JSON.parse(placesStr);
-    
-    setTripData(trip);
-    setSelectedPlaces(places);
-
-    // Initialize day schedules
-    const schedules: DaySchedule[] = [];
-    for (let i = 0; i < trip.days; i++) {
-      const date = new Date(trip.startDate);
-      date.setDate(date.getDate() + i);
-      schedules.push({
-        day: i + 1,
-        date: date.toISOString().slice(0, 10),
-        places: [],
-      });
+    // 초기화
+    setUnassigned(state.selectedPlaces);
+    const initial: { [key: number]: Place[] } = {};
+    for (let i = 0; i < state.days; i++) {
+      initial[i] = [];
     }
-    setDaySchedules(schedules);
-  }, [navigate]);
+    setDailySchedules(initial);
+  }, [state, navigate]);
 
-  const addPlaceToDay = (place: Place, day: number) => {
-    const newSchedules = [...daySchedules];
-    const dayIndex = day - 1;
-    
-    // Check if place already in this day
-    if (newSchedules[dayIndex].places.find(p => p.id === place.id)) {
-      showToast('이미 이 날짜에 추가된 장소입니다', 'warning');
+  if (!state) return null;
+
+  const { startDate, endDate, days } = state;
+
+  const getDayLabel = (dayIndex: number) => {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + dayIndex);
+    return `Day ${dayIndex + 1} (${date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })})`;
+  };
+
+  // 드래그 시작
+  const handleDragStart = (place: Place, from: 'unassigned' | number) => {
+    setDraggedItem({ place, from });
+  };
+
+  // 드롭 처리
+  const handleDrop = (to: 'unassigned' | number) => {
+    if (!draggedItem) return;
+
+    const { place, from } = draggedItem;
+
+    // 같은 곳에 드롭하면 무시
+    if (from === to) {
+      setDraggedItem(null);
       return;
     }
 
-    newSchedules[dayIndex].places.push(place);
-    setDaySchedules(newSchedules);
+    // from에서 제거
+    if (from === 'unassigned') {
+      setUnassigned(prev => prev.filter(p => p.id !== place.id));
+    } else {
+      setDailySchedules(prev => ({
+        ...prev,
+        [from]: prev[from].filter(p => p.id !== place.id),
+      }));
+    }
+
+    // to에 추가
+    if (to === 'unassigned') {
+      setUnassigned(prev => [...prev, place]);
+    } else {
+      setDailySchedules(prev => ({
+        ...prev,
+        [to]: [...prev[to], place],
+      }));
+    }
+
+    setDraggedItem(null);
   };
 
-  const removePlaceFromDay = (placeId: string, day: number) => {
-    const newSchedules = [...daySchedules];
-    newSchedules[day - 1].places = newSchedules[day - 1].places.filter(p => p.id !== placeId);
-    setDaySchedules(newSchedules);
+  // 장소 삭제
+  const removePlace = (dayIndex: number, placeId: string) => {
+    const place = dailySchedules[dayIndex].find(p => p.id === placeId);
+    if (place) {
+      setDailySchedules(prev => ({
+        ...prev,
+        [dayIndex]: prev[dayIndex].filter(p => p.id !== placeId),
+      }));
+      setUnassigned(prev => [...prev, place]);
+    }
   };
 
-  const isPlaceAdded = (placeId: string) => {
-    return daySchedules.some(schedule => 
-      schedule.places.some(p => p.id === placeId)
-    );
-  };
-
-  const getTravelTime = (fromPlace: Place, toPlace: Place) => {
-    // Simple distance calculation (Haversine formula)
-    const R = 6371; // Earth radius in km
-    const dLat = (toPlace.lat - fromPlace.lat) * Math.PI / 180;
-    const dLon = (toPlace.lng - fromPlace.lng) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(fromPlace.lat * Math.PI / 180) * Math.cos(toPlace.lat * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
+  const handleNext = async () => {
+    // 모든 장소가 배치되었는지 확인
+    const totalAssigned = Object.values(dailySchedules).reduce((sum, places) => sum + places.length, 0);
     
-    // Estimate time (assuming 30km/h average speed in city)
-    const timeInHours = distance / 30;
-    const timeInMins = Math.ceil(timeInHours * 60);
-    
-    return timeInMins;
-  };
-
-  const handleComplete = () => {
-    if (!tripData) return;
-
-    // Check if at least one day has places
-    const hasPlaces = daySchedules.some(schedule => schedule.places.length > 0);
-    if (!hasPlaces) {
-      alert('최소 1개 날짜에 장소를 추가해주세요!');
+    if (totalAssigned === 0) {
+      alert(t('selectAtLeastOnePlace'));
       return;
     }
 
-    // Create itinerary for the first day (can be extended later)
-    const firstDay = daySchedules[0];
-    const items: ItineraryItem[] = firstDay.places.map((place, index) => ({
-      id: `item-${Date.now()}-${index}`,
-      place,
-      stayDurationMins: 60,
-    }));
-
-    const itinerary: DailyItinerary = {
-      id: `trip-${Date.now()}`,
-      title: tripData.title,
-      date: tripData.startDate,
-      items,
-      transportMode: 'TRANSIT',
+    const newTripData = {
+      title: `${state.cityName} 여행`,
+      cityName: state.cityName,
+      startDate: state.startDate,
+      endDate: state.endDate,
+      days: state.days,
+      dailySchedules,
     };
 
-    setItinerary(itinerary);
+    // 일단 localStorage에 저장 (Firebase는 나중에)
+    const tripId = `trip-${Date.now()}`;
+    const newTrip = {
+      id: tripId,
+      ...newTripData,
+      createdAt: Date.now(),
+    };
     
-    // Clear session storage
-    sessionStorage.removeItem('newTrip');
-    sessionStorage.removeItem('selectedPlaces');
-
-    showToast('여행 일정이 생성되었습니다!', 'success');
+    const existingTrips = localStorage.getItem('myTrips');
+    const trips = existingTrips ? JSON.parse(existingTrips) : [];
+    trips.push(newTrip);
+    localStorage.setItem('myTrips', JSON.stringify(trips));
     
-    // Navigate to trip detail
-    setTimeout(() => {
-      navigate(`/trip/${itinerary.id}`);
-    }, 500);
+    // 상세 페이지로 이동
+    navigate(`/trip/${tripId}`, { replace: true });
   };
-
-  const getUnassignedPlaces = () => {
-    return selectedPlaces.filter(place => !isPlaceAdded(place.id));
-  };
-
-  if (!tripData) return null;
-
-  const currentSchedule = daySchedules.find(s => s.day === selectedDay);
-  const unassignedPlaces = getUnassignedPlaces();
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-teal-600">3 / 3 단계</span>
-            <span className="text-sm text-gray-500">일정 구성</span>
+    <div className="min-h-screen pb-24 bg-gray-50">
+      {/* Header */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-6xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center mb-4 text-gray-900 hover:text-gray-700"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            {t('previous')}
+          </button>
+          <div className="mb-4">
+            <span className="px-3 py-1 text-sm font-bold text-gray-900 bg-white rounded-full">
+              {t('step3Of3')}
+            </span>
           </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: '100%' }}></div>
-          </div>
-        </div>
-
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            하루 일정을 구성해보세요
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+            {t('arrangeSchedule')}
           </h1>
-          <p className="text-lg text-gray-600">
-            장소를 날짜별로 배치하고 이동 시간을 확인하세요
+          <p className="text-gray-800">
+            {t('arrangePlacesByDay')}
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Unassigned Places */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-teal-500" />
-                선택한 장소 ({unassignedPlaces.length})
-              </h2>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {unassignedPlaces.map((place) => (
-                  <button
-                    key={place.id}
-                    onClick={() => addPlaceToDay(place, selectedDay)}
-                    className="w-full text-left p-3 rounded-xl border border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition-all group"
-                  >
-                    <div className="font-semibold text-gray-900 text-sm mb-1 group-hover:text-primary-700">
-                      {place.name}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {place.address}
-                    </div>
-                  </button>
-                ))}
-                {unassignedPlaces.length === 0 && (
-                  <p className="text-center text-gray-500 py-8 text-sm">
-                    모든 장소가 배치되었습니다
-                  </p>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2 mt-2 text-sm font-medium text-gray-900">
+            <Calendar className="w-4 h-4" />
+            {startDate} ~ {endDate} ({days}일)
           </div>
+        </div>
+      </div>
 
-          {/* Right: Day Schedule */}
+      <div className="max-w-6xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Left: Day Tabs + Schedule */}
           <div className="lg:col-span-2">
             {/* Day Tabs */}
-            <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-              {daySchedules.map((schedule) => (
+            <div className="flex gap-2 mb-6 overflow-x-auto">
+              {Array.from({ length: days }, (_, i) => (
                 <button
-                  key={schedule.day}
-                  onClick={() => setSelectedDay(schedule.day)}
-                  className={`flex items-center space-x-2 px-5 py-3 rounded-xl font-medium whitespace-nowrap transition-all ${
-                    selectedDay === schedule.day
-                      ? 'bg-teal-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  key={i}
+                  onClick={() => setSelectedDay(i)}
+                  className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                    selectedDay === i
+                      ? 'bg-primary-400 text-gray-900 border-2 border-primary-600'
+                      : 'bg-white text-gray-400 hover:text-gray-600'
                   }`}
                 >
-                  <Calendar className="w-4 h-4" />
-                  <span>Day {schedule.day}</span>
-                  {schedule.places.length > 0 && (
-                    <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
-                      {schedule.places.length}
-                    </span>
-                  )}
+                  {getDayLabel(i)}
                 </button>
               ))}
             </div>
 
-            {/* Schedule List */}
-            {currentSchedule && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Day {currentSchedule.day} 일정
-                  </h2>
-                  <span className="text-sm text-gray-500">
-                    {currentSchedule.date}
-                  </span>
+            {/* Schedule Drop Zone */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(selectedDay)}
+              className="min-h-[400px] p-6 bg-white border-2 border-dashed border-gray-300 rounded-xl"
+            >
+              <h3 className="mb-4 text-lg font-bold text-gray-900">
+                {getDayLabel(selectedDay)} {t('scheduleLabel')}
+              </h3>
+              {dailySchedules[selectedDay]?.length === 0 ? (
+                <div className="flex items-center justify-center py-20 text-gray-400">
+                  <div className="text-center">
+                    <MapPin className="w-12 h-12 mx-auto mb-2" />
+                    <p>{t('dragToAdd')}</p>
+                  </div>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {dailySchedules[selectedDay]?.map((place, index) => (
+                    <div
+                      key={place.id}
+                      draggable
+                      onDragStart={() => handleDragStart(place, selectedDay)}
+                      className="flex items-center gap-4 p-4 transition-shadow bg-white border border-gray-200 cursor-move rounded-xl hover:shadow-md"
+                    >
+                      <GripVertical className="w-5 h-5 text-gray-400" />
+                      <div className="flex items-center justify-center w-8 h-8 font-bold text-white rounded-full bg-primary-600">
+                        {index + 1}
+                      </div>
+                      {place.image && (
+                        <img
+                          src={place.image}
+                          alt={place.name}
+                          className="object-cover w-16 h-16 rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{place.name}</h4>
+                        <p className="text-sm text-gray-500">{place.category}</p>
+                      </div>
+                      <button
+                        onClick={() => removePlace(selectedDay, place.id)}
+                        className="p-2 text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
-                {currentSchedule.places.length === 0 ? (
-                  <div className="text-center py-16">
-                    <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">
-                      왼쪽에서 장소를 선택하여 일정을 추가하세요
-                    </p>
+          {/* Right: Unassigned Places */}
+          <div>
+            <div className="sticky top-4">
+              <h3 className="mb-4 text-lg font-bold text-gray-900">
+                {t('unassignedPlaces')} ({unassigned.length})
+              </h3>
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDrop('unassigned')}
+                className="p-4 bg-white border-2 border-dashed border-gray-300 rounded-xl max-h-[600px] overflow-y-auto"
+              >
+                {unassigned.length === 0 ? (
+                  <div className="py-10 text-center text-gray-400">
+                    <p className="text-sm">모든 장소가 배치되었습니다</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {currentSchedule.places.map((place, index) => (
-                      <div key={place.id}>
-                        {/* Place Card */}
-                        <div className="flex items-start space-x-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                          <div className="shrink-0 w-10 h-10 bg-teal-500 text-white rounded-full flex items-center justify-center font-bold">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-gray-900 mb-1">
-                              {place.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 truncate">
-                              {place.address}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => removePlaceFromDay(place.id, currentSchedule.day)}
-                            className="shrink-0 p-2 text-gray-400 hover:text-red-500 transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </div>
-
-                        {/* Travel Time */}
-                        {index < currentSchedule.places.length - 1 && (
-                          <div className="flex items-center space-x-2 py-3 px-12 text-sm text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              이동시간: 약 {getTravelTime(place, currentSchedule.places[index + 1])}분
-                            </span>
-                          </div>
+                  <div className="space-y-3">
+                    {unassigned.map((place) => (
+                      <div
+                        key={place.id}
+                        draggable
+                        onDragStart={() => handleDragStart(place, 'unassigned')}
+                        className="p-3 transition-shadow bg-white border border-gray-200 rounded-lg cursor-move hover:shadow-md"
+                      >
+                        {place.image && (
+                          <img
+                            src={place.image}
+                            alt={place.name}
+                            className="object-cover w-full h-32 mb-2 rounded-lg"
+                          />
                         )}
+                        <h4 className="font-semibold text-gray-900 line-clamp-1">{place.name}</h4>
+                        <p className="text-xs text-gray-500 line-clamp-1">{place.category}</p>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Bottom Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-10">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+      {/* Fixed Bottom Bar */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {t('assignedPlaces')}: {Object.values(dailySchedules).reduce((sum, places) => sum + places.length, 0)} / {state.selectedPlaces.length}
+            </div>
             <button
-              onClick={() => navigate('/create-trip/select-places')}
-              className="flex items-center space-x-2 px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium"
+              onClick={handleNext}
+              className="flex items-center gap-2 px-6 py-3 font-semibold text-gray-900 transition-colors rounded-xl bg-primary-400 hover:bg-primary-500"
             >
-              <ArrowLeft className="w-5 h-5" />
-              <span>이전</span>
-            </button>
-            <button
-              onClick={handleComplete}
-              className="flex items-center space-x-2 px-8 py-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors font-medium shadow-lg"
-            >
-              <Check className="w-5 h-5" />
-              <span>일정 완성하기</span>
+              {t('finishItinerary')}
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>

@@ -1,5 +1,4 @@
 // Global Toast notification component
-import { useEffect, useState } from 'react';
 import { X, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -7,15 +6,10 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 interface ToastProps {
   message: string;
   type: ToastType;
-  duration?: number;
   onClose: () => void;
 }
 
-export default function Toast({ message, type, duration = 3000, onClose }: ToastProps) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
-  }, [duration, onClose]);
+export default function Toast({ message, type, onClose }: ToastProps) {
 
   const colors = {
     success: 'bg-green-50 border-green-200 text-green-800',
@@ -33,41 +27,11 @@ export default function Toast({ message, type, duration = 3000, onClose }: Toast
 
   return (
     <div className={`fixed top-20 right-4 z-50 flex items-center space-x-3 px-4 py-3 border rounded-xl shadow-lg ${colors[type]} animate-fade-in`}>
-      <Icon className="h-5 w-5 shrink-0" />
+      <Icon className="w-5 h-5 shrink-0" />
       <p className="text-sm font-medium">{message}</p>
       <button onClick={onClose} className="ml-2 hover:opacity-70">
-        <X className="h-4 w-4" />
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
-}
-
-// Toast Manager hook
-let toastId = 0;
-const toastListeners: Array<(toast: { id: number; message: string; type: ToastType }) => void> = [];
-
-export function useToast() {
-  const [toasts, setToasts] = useState<Array<{ id: number; message: string; type: ToastType }>>([]);
-
-  useEffect(() => {
-    const listener = (toast: { id: number; message: string; type: ToastType }) => {
-      setToasts((prev) => [...prev, toast]);
-    };
-    toastListeners.push(listener);
-    return () => {
-      const index = toastListeners.indexOf(listener);
-      if (index > -1) toastListeners.splice(index, 1);
-    };
-  }, []);
-
-  const removeToast = (id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  return { toasts, removeToast };
-}
-
-export function showToast(message: string, type: ToastType = 'info') {
-  const id = toastId++;
-  toastListeners.forEach((listener) => listener({ id, message, type }));
 }

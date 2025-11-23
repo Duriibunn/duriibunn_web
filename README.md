@@ -16,8 +16,16 @@
 - 🌐 **다국어 지원**: 한국어/영어 UI (i18next)
 - 💾 **클라우드 저장**: Firebase Firestore + 로컬 스토리지 백업
 
-### 🆕 최신 업데이트
+### 🆕 최신 업데이트 (2025-11-23)
 
+- ✅ **마이로 스타일 홈페이지 개선** (내 여행 계획 섹션 추가)
+  - 여행 계획이 있을 때: 여행 카드 그리드 표시
+  - 여행 계획이 없을 때: 빈 상태 UI + CTA 버튼
+  - 증언 섹션: "10시간 → 5분" 시간 절약 메시지
+- ✅ **트리플 스타일 여행 생성 플로우**
+  - 지역 선택 → 추천 여행지 → 검색 기능
+  - SelectCityPage: 9개 한국 주요 도시
+  - RecommendationsPage: API 기반 추천 + 검색
 - ✅ **공공데이터 API 통합** (data.go.kr - 한국관광공사 Tour API)
 - ✅ **Firebase CRUD 완료** (일정 생성/읽기/수정/삭제)
 - ✅ **다국어 지원** (i18next - 한국어/영어)
@@ -227,12 +235,56 @@ const results = await searchKeyword('경복궁', CONTENT_TYPES.TOURIST_SPOT);
 
 ## 🧪 테스트
 
+### 코드 품질 체크
 ```bash
 # ESLint 실행
 npm run lint
 
 # TypeScript 타입 체크
 npm run tsc
+```
+
+### 홈페이지 "내 여행 계획" 기능 테스트
+
+**빈 상태 테스트** (여행 계획이 없을 때):
+1. 브라우저에서 http://localhost:5173 접속
+2. "내 여행 계획" 섹션에 빈 상태 UI 확인
+3. "여행 계획 세우기" 버튼 클릭 → `/trip/select-city` 이동 확인
+
+**여행 계획 있는 상태 테스트**:
+1. 브라우저 개발자 도구 (F12) 콘솔 열기
+2. 다음 명령어 입력하여 샘플 데이터 추가:
+```javascript
+localStorage.setItem('myTrips', JSON.stringify([
+  {
+    id: 'trip-1',
+    title: '서울 주말 여행',
+    city: '서울',
+    startDate: '2025-12-01',
+    endDate: '2025-12-03',
+    days: 3,
+    itineraries: []
+  },
+  {
+    id: 'trip-2',
+    title: '제주도 힐링',
+    city: '제주',
+    startDate: '2025-12-15',
+    endDate: '2025-12-18',
+    days: 4,
+    itineraries: []
+  }
+]))
+```
+3. 페이지 새로고침 (F5)
+4. "내 여행 계획" 섹션에 여행 카드 2개 + "새 여행 계획 만들기" 카드 확인
+5. 여행 카드 클릭 → 상세 페이지 이동 확인
+6. "새 여행 계획 만들기" 카드 클릭 → `/trip/select-city` 이동 확인
+
+**데이터 초기화**:
+```javascript
+localStorage.removeItem('myTrips')
+// 페이지 새로고침
 ```
 
 ## 📝 프로젝트 요구사항 체크리스트
